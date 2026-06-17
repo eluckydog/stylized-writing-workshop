@@ -1,0 +1,9 @@
+{
+  "corpus_root": "D:\\向量库\\睡前消息文稿的存档仓库\\docs\\btnews",
+  "chroma_dir": "[workbuddy-workspace]\\vector_db\\maqianzu_chroma",
+  "model": "BAAI/bge-small-zh-v1.5",
+  "total_files": 1378,
+  "total_chunks": 1376,
+  "total_skipped": 2,
+  "created_at": "2026-06-17T19:55:14.805068"
+}

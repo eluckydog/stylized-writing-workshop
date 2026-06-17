@@ -1,5 +1,4 @@
 # 风格化写作工坊 — 排除构建产物
-vector_db/
 __pycache__/
 *.pyc
 .workbuddy/
