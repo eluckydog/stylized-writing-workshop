@@ -17,6 +17,13 @@ edge_detector_essay.py — 政经评论风格检测器
 import re
 import math
 from collections import Counter
+from typing import Optional
+
+# lang_config for bilingual support
+try:
+    from . import lang_config as lc
+except ImportError:
+    import lang_config as lc
 
 
 # ═══════════════════════════════════════════════
@@ -252,7 +259,7 @@ def detect_golden_sentence(text: str) -> dict:
 # ═══════════════════════════════════════════════
 # 4. AI安全词检测（政论专属）
 # ═══════════════════════════════════════════════
-def detect_ai_safe_words(text: str) -> dict:
+def detect_ai_safe_words(text: str, lang: str = "zh") -> dict:
     """
     检测 AI 套话/安全词——政经评论的特有"AI味"指标。
     
@@ -261,8 +268,10 @@ def detect_ai_safe_words(text: str) -> dict:
     """
     total_chars = len(text)
 
-    # 安全词分类
-    safe_word_categories = {
+    # 安全词分类（支持中英文，从 lang_config 加载）
+    safe_word_categories = lc.get_nested("edge_detector", "ai_safe_words", lang=lang)
+    if not safe_word_categories:
+        safe_word_categories = {
         "空洞表态": [
             r'值得[我深]?[们思]?[深思关注思考警惕注意重视肯定称道]',
             r'具有[极其]?[重要深远重大特殊][意(?:义|思)][深远]?',
@@ -479,7 +488,13 @@ def detect_rhetoric_clustering(text: str) -> dict:
 # ═══════════════════════════════════════════════
 # 综合评分
 # ═══════════════════════════════════════════════
-def full_report(text: str) -> dict:
+def full_report(text: str, lang: Optional[str] = None) -> dict:
+    """返回完整的政经评论风格检测报告
+    
+    lang: "zh" | "en", 默认自动检测
+    """
+    if lang is None:
+        lang = lc.detect_lang(text)
     """返回完整的政经评论风格检测报告"""
     rhythm = detect_sentence_rhythm(text)
     data_density = detect_data_density(text)
@@ -562,7 +577,7 @@ def full_report(text: str) -> dict:
     }
 
 
-def generate_advice(text: str) -> list[str]:
+def generate_advice(text: str, lang: Optional[str] = None) -> list[str]:
     """基于检测结果生成修改建议"""
     report = full_report(text)
     advice = []
