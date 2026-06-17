@@ -1,0 +1,49 @@
+{
+  "name": "stylized-writing-workshop",
+  "plugin": "stylized-writing-workshop",
+  "version": "1.0.0",
+  "expertType": "team",
+  "agentName": "stylized-writing-team-lead",
+  "displayName": { "en": "Stylized Writing Workshop", "zh": "风格化写作工坊" },
+  "displayDescription": { "en": "Four-style writing team + independent style auditor: Lu Kewen, Jiubian, Ma Qianzu, China National Geography", "zh": "四风格写作+独立风格审计：卢克文、九边、马前卒、中国国家地理" },
+  "description": "风格化写作专家团 — 四位写手+独立审计官，衍梦文枢模式管线",
+  "profession": { "en": "Stylized Writing Workshop", "zh": "风格化写作工坊" },
+  "categoryId": "12-IndustryConsultant",
+  "avatar": "avatars/expert.png",
+  "author": "eluckydog",
+  "license": "MIT",
+  "agents": [
+    "./agents/stylized-writing-team-lead.md",
+    "./agents/stylized-writer-lukewen.md",
+    "./agents/stylized-writer-jiubian.md",
+    "./agents/stylized-writer-maqianzu.md",
+    "./agents/stylized-writer-natgeo.md",
+    "./agents/stylized-writing-auditor.md"
+  ],
+  "skills": ["./skills/styles"],
+  "tags": [
+    { "en": "Content Writing", "zh": "内容写作" },
+    { "en": "Chinese Style", "zh": "中文风格" },
+    { "en": "Creative Writing", "zh": "创意写作" }
+  ],
+  "teamInfo": {
+    "defaultMode": "manual",
+    "availableModes": ["manual"],
+    "pipelineType": "hub_spoke",
+    "teamLead": "stylized-writing-team-lead"
+  },
+  "members": [
+    { "id": "stylized-writing-team-lead", "displayName": { "en": "Workshop Lead", "zh": "主理人" }, "profession": { "en": "Chief Editor", "zh": "主理人" }, "role": "lead" },
+    { "id": "stylized-writer-lukewen", "displayName": { "en": "Lu Kewen Style", "zh": "卢克文" }, "profession": { "en": "Field Research Writer", "zh": "田野调查写手" }, "role": "member" },
+    { "id": "stylized-writer-jiubian", "displayName": { "en": "Jiubian Style", "zh": "九边" }, "profession": { "en": "Data-Driven Writer", "zh": "数据驱动写手" }, "role": "member" },
+    { "id": "stylized-writer-maqianzu", "displayName": { "en": "Ma Qianzu Style", "zh": "马前卒" }, "profession": { "en": "Engineering Thinker Writer", "zh": "工程思维写手" }, "role": "member" },
+    { "id": "stylized-writer-natgeo", "displayName": { "en": "China National Geography Style", "zh": "中国国家地理" }, "profession": { "en": "Science Writing", "zh": "科普通俗写手" }, "role": "member" },
+    { "id": "stylized-writing-auditor", "displayName": { "en": "Style Auditor", "zh": "风格审计官" }, "profession": { "en": "Independent Auditor", "zh": "独立审计官" }, "role": "member" }
+  ],
+  "quickPrompts": [
+    { "en": "Write about China's manufacturing in Lu Kewen's style, then audit", "zh": "用卢克文风格写一篇制造业分析，然后审计" },
+    { "en": "Write an economic analysis in Jiubian's data-driven style", "zh": "用九边风格写一篇经济趋势分析" },
+    { "en": "Write a travel article in China National Geography style", "zh": "用中国国家地理风格写一篇文旅文章" }
+  ],
+  "defaultInitPrompt": { "en": "Activate Stylized Writing Workshop with pipeline: writer creates → style auditor checks. Pick a style.", "zh": "启动风格化写作工坊管线：写手创作→审计官把关。选择风格。" }
+}

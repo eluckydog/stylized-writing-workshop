@@ -1,0 +1,9 @@
+{
+  "teamConfig": {
+    "pipelineType": "hub_spoke",
+    "defaultMode": "manual",
+    "availableModes": ["manual"],
+    "defenseVeto": false,
+    "maxDebateRounds": 0
+  }
+}
