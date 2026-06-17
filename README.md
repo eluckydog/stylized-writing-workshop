@@ -11,7 +11,7 @@
 
 ## 技术特色
 
-### 1. 四层确定性引擎
+### 1. 五层确定性引擎
 
 放弃传统靠 prompt 约束写作风格的做法，改用 **Python 确定性规则引擎**：
 
@@ -21,6 +21,7 @@
 | **style_profile_engine** | 校验风格合规 | 论证结构匹配/禁忌清单/数据密度阈值 |
 | **argument_controller** | 强制三段论 | 问题→分析→方案逐段校验 + 写作提纲生成 |
 | **citation_guard** | 检查引用质量 | 来源前缀匹配/模糊表述检测/可信度评分 |
+| **logic_guard** | 逻辑与幻觉检测 | 因果链完整性/事实声明标记/矛盾检测/时间线一致性 |
 
 所有检测基于 **正则匹配、统计分布、基尼系数** 等确定性方法，不需要 LLM 做二次判断。
 
@@ -58,7 +59,8 @@ stylized-writing-workshop/
 │   ├── edge_detector_essay.py       风格质量检测
 │   ├── style_profile_engine.py      风格规则校验
 │   ├── argument_controller.py       论证结构控制
-│   └── citation_guard.py            引用来源守卫
+│   ├── citation_guard.py            引用来源守卫
+│   └── logic_guard.py               逻辑一致性与幻觉检测
 ├── vector_db/                 # ChromaDB 向量库
 │   ├── maqianzu/                   马前卒语料 (198MB)
 │   └── literary_ref/               成语+诗词 (550MB)
@@ -154,7 +156,7 @@ guard.scan(open("article.txt").read())
 
 ## Roadmap
 
-- [x] 四大 Python 确定性引擎
+- [x] 五大 Python 确定性引擎（含防幻觉/逻辑一致性）
 - [x] 马前卒语料向量库（1376 条切片）
 - [x] 文学引用向量库（成语 30K + 诗词 10K）
 - [ ] 九边/卢克文本地向量库（待找到合适的公开语料）
