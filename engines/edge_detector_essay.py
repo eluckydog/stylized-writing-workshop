@@ -503,7 +503,7 @@ def detect_word_repetition(text: str, lang: str = "zh") -> dict:
     import collections
     
     total_chars = len(text)
-    # 中文信息密度高，100字即有足够统计量；英文需要较多单词
+    # 中文信息密度高，100字即有足够统计量；英文/日语需要较多
     min_chars = 100 if lang == "zh" else 200
     if total_chars < min_chars:
         return {"repetition_score": 50, "top_repeated": [], "obsessive_words": [], "status": "too_short", "issues": []}

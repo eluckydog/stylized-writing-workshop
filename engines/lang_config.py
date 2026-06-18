@@ -14,7 +14,7 @@ from __future__ import annotations
 import re
 from typing import Literal
 
-Lang = Literal["zh", "en"]
+Lang = Literal["zh", "en", "ja"]
 
 
 # ============================================================
@@ -24,9 +24,15 @@ Lang = Literal["zh", "en"]
 def detect_lang(text: str) -> Lang:
     """
     自动检测文本语言
-    抽样前 200 字符，统计中文字符占比
+    抽样前 200 字符：
+    - 含平假名/片假名 → ja
+    - 中文字符占比 > 10% → zh
+    - 否则 → en
     """
     sample = text[:200]
+    hira_kata = sum(1 for c in sample if '\u3040' <= c <= '\u309f' or '\u30a0' <= c <= '\u30ff')
+    if hira_kata > 3:
+        return "ja"
     cn_chars = sum(1 for c in sample if '\u4e00' <= c <= '\u9fff')
     return "zh" if cn_chars > len(sample) * 0.1 else "en"
 
@@ -38,6 +44,7 @@ def detect_lang(text: str) -> Lang:
 SENTENCE_SPLIT = {
     "zh": r'(?<=[。！？；\n])',
     "en": r'(?<=[.!?;\n])',
+    "ja": r'(?<=[。！？\n])',
 }
 
 
@@ -50,6 +57,7 @@ EDGE_DETECTOR = {
     "sentence_split": {
         "zh": r'[。！？\n；]',
         "en": r'[.!?\n;]',
+        "ja": r'[。！？\n]',
     },
 
     # = 金句模式 =
@@ -72,6 +80,14 @@ EDGE_DETECTOR = {
             r'(?:From|In|At|By|With|Through)[^.!?;]{5,25}(?:,|;)[^.!?;]{5,25}(?:,|;)[^.!?;]{5,25}',
             r'(?:In other words|That is to say|What this means is|At its core|Fundamentally|Ultimately)',
             r'(?:Not only|Not just|Not merely)[^.!?;]{3,30}(?:but also|but|yet|still)[^.!?;]{3,30}',
+        ],
+        "ja": [
+            r'(?:なぜ|どうして|何故)[^。！？]{5,50}[？?][^。！？]{5,80}[。！]',
+            r'(?:ただの|単なる|単に)[^。！？]{4,30}(?:ではなく|ではなくて|じゃなく)[^。！？]{4,30}',
+            r'(?:もし|仮に|万が一)[^。！？]{5,50}(?:ならば|たら|れば|と)',
+            r'(?:〜ば〜ほど|すればするほど|になればなるほど)',
+            r'(?:言い換えれば|つまり|すなわち|要するに|結論として|本質的に)',
+            r'(?:だけでなく|のみならず|ばかりか)[^。！？]{3,25}(?:もまた|さらに|加えて|その上)',
         ],
     },
 
@@ -137,6 +153,29 @@ EDGE_DETECTOR = {
                 r'(?:significantly|substantially|meaningfully)\s+(?:enhance|improve|strengthen|advance)',
             ],
         },
+        "ja": {
+            "空疎な決意": [
+                r'考慮[するする]?必要[があるとなる]',
+                r'重要な[意義意味役割]を[持つ果たす担う]',
+                r'無視[できな?い?|してはならない]',
+                r'注目[すべき?|に値する]',
+            ],
+            "曖昧な結論": [
+                r'さらなる[研究検討考察分析]が[必要求められる]',
+                r'今後の[課題と[なる?する?]|展望が[期待される?]]',
+                r'長い目で[見る見守る]必要がある',
+            ],
+            "婉曲な表現": [
+                r'ある[意味程度]では',
+                r'[考えられ?]なくはない|言えなくもない',
+                r'一概に[は]?[言えな?い?|否定できな?い?]',
+            ],
+            "空虚な評価": [
+                r'[新た新しい]な[時代局面ステージ]を[迎える切り開く築く]',
+                r'[大きく顕著に著しく]?[向上改善進展促進]',
+                r'[高く大きく]?[評価期待]される',
+            ],
+        },
     },
 
     # = 修辞模式 =
@@ -161,6 +200,16 @@ EDGE_DETECTOR = {
             r'(?:from|between)[^.!?;]{3,20}(?:to|and)[^.!?;]{3,20}',
             r'(?:both|either)[^.!?;]{2,15}(?:and|or)[^.!?;]{2,15}',
         ],
+        "ja": [
+            r'(?:だけでなく|のみならず|ばかりか)[^。！？]{3,20}(?:も|また|さらに)',
+            r'(?:ではなく|ではなくて|じゃなく)[^。！？]{3,20}(?:である|だ|です)',
+            r'(?:だろうか|ではないか|といえる|とは|何だろう)',
+            r'(?:〜ば〜ほど|すればするほど|なればなるほど)',
+            r'(?:でも|ても|でも|でも)[^。！？]{2,15}(?:ても|でも)',
+            r'(?:一方で|他方で)[^。！？]{3,25}(?:また|他方)',
+            r'(?:から|より|まで)[^。！？]{3,20}(?:に|へ|まで)',
+            r'(?:も[あい]?れば|も[あい]?れば)[^。！？]{2,15}(?:も|ほど)',
+        ],
     },
 }
 
@@ -182,6 +231,10 @@ LOGIC_GUARD = {
         "en": [
             (r'(?:in|on|during|since|by)\s*(\d{4})\s*', "historical_date"),
             (r'(?:according\s+to|per|pursuant\s+to|under)\s+(?:the\s+)?(?:Act|Law|Regulation|Policy|Agreement|Treaty)', "policy_law"),
+        ],
+        "ja": [
+            (r'(?:\d{4})\s*年\s*', "historical_date"),
+            (r'(?:[「『][^」』]{2,30}[」』])', "policy_doc"),
             (r'(?:In|By|Since|After)\s*\d{4}[^.!?]{0,30}(?:reached|surpassed|achieved|completed|released|launched|established|signed)', "event_claim"),
             (r'(?:global|world|national|regional)[^.!?]{3,30}(?:first|top|leading|largest|highest|ranked)', "ranking"),
             (r'"(?:[A-Z][^"]{4,60})"(?:\s+(?:Act|Treaty|Agreement|Plan|Initiative|Program))?', "policy_document"),
@@ -193,22 +246,26 @@ LOGIC_GUARD = {
         "forward": {   # cause → effect
             "zh": r'因为|由于|源于|来自于|起因于|得益于',
             "en": r'because|since|due\s+to|owing\s+to|stem\s+from|result\s+from|driven\s+by',
+            "ja": r'なぜなら|というのも|だって|からには|により|によって|のため',
         },
         "backward": {   # effect ← cause
             "zh": r'因此|所以|从而|进而|于是|导致|引发|带来|催生|促使',
             "en": r'therefore|thus|hence|consequently|as\s+a\s+result|lead\s+to|result\s+in|give\s+rise\s+to|spark|trigger|fuel',
+            "ja": r'したがって|だから|ゆえに|そのため|よって|引き起こす|もたらす|導く|招く|生む|起因する',
         },
     },
 
     "contradiction_signals": {
         "zh": r'然而|但是|不过|相反|恰恰|倒[是]?|实则|其实',
         "en": r'however|but|yet|nevertheless|nonetheless|on\s+the\s+contrary|conversely|in\s+contrast',
+        "ja": r'しかし|だが|けれども|ところが|にもかかわらず|一方で|それに対して|逆に|反対に',
     },
 
     "certainty": {
         "high": {
             "zh": r'肯定|必然|一定|毫无疑问|毋庸置疑|事实证明|历史证明',
             "en": r'certainly|inevitably|undoubtedly|without\s+doubt|beyond\s+question|proven|demonstrated',
+            "ja": r'必ず|間違いなく|絶対に|確かに|明らかに|疑いなく|証明された',
         },
         "medium": {
             "zh": r'大概率|很可能|有望|应该|预计',
