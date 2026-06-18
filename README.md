@@ -17,6 +17,8 @@
 
 | Engine | What | How |
 |--------|------|-----|
+| **research_orchestrator** | Autonomous writing pipeline | web research → outline → write → 5-engine QC → iterate |
+| **vector_search** | Unified vector search | cross-DB query across maqianzu + idioms + poems |
 | **edge_detector_essay** | Detect "AI taste" (7 dims) | sentence variance / Gini coefficient / data density / AI-safe words / repetition / golden sentences / rhetoric clustering |
 | **style_profile_engine** | Style compliance | argument structure matching / forbidden list / data thresholds |
 | **argument_controller** | Force 3-stage logic | problem→analysis→solution paragraph validation + outline generation |
@@ -330,6 +332,8 @@ stylized-writing-workshop/
 │   ├── stylized-writing-auditor.md   Style auditor
 │   └── stylized-writing-team-lead.md Team coordinator
 ├── engines/                   # Python deterministic engines
+│   ├── research_orchestrator.py      [NEW] Autonomous research & writing pipeline
+│   ├── vector_search.py              [NEW] Unified vector search (all DBs)
 │   ├── lang_config.py               Trilingual pattern config (ZH/EN/JA)
 │   ├── edge_detector_essay.py       7-dim AI-taste detection
 │   ├── style_profile_engine.py      Style rule validation
