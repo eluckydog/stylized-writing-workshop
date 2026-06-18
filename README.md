@@ -5,7 +5,7 @@
 
 这不是一个"写文章"的工具，而是一套 **"让AI写出来的东西不像AI写的"** 的质量控制系统。核心思路：**"好作品走极端，AI安全就是平庸"**。
 
-> WorkBuddy Agent · qclaw Skill · 中英文双语
+> WorkBuddy Agent · qclaw Skill · 中英日三语 · 7维检测
 
 ---
 
@@ -17,7 +17,7 @@
 
 | Engine | What | How |
 |--------|------|-----|
-| **edge_detector_essay** | Detect "AI taste" | sentence variance / Gini coefficient / data density / AI-safe words |
+| **edge_detector_essay** | Detect "AI taste" (7 dims) | sentence variance / Gini coefficient / data density / AI-safe words / repetition / golden sentences / rhetoric clustering |
 | **style_profile_engine** | Style compliance | argument structure matching / forbidden list / data thresholds |
 | **argument_controller** | Force 3-stage logic | problem→analysis→solution paragraph validation + outline generation |
 | **citation_guard** | Citation quality | source prefix matching / vague statement detection / credibility scoring |
@@ -30,17 +30,15 @@ All detections are **deterministic** (regex, statistics, Gini coefficient). No L
 - **maqianzu corpus** (198MB): 1,376 semantic chunks from btnews (832 episodes + 40 opinions + 446 references + 60 slang)
 - **Literary reference** (550MB): 30,310 Chinese idioms + 10,000 classical poem sentences (THUOCL)
 
-### 多语言支持 · Bilingual
+### 多语言支持 · Trilingual (ZH/EN/JA)
 
 ```python
 from engines.edge_detector_essay import full_report
 
-# Auto-detect language
-report = full_report("This cannot be overstated. A long way to go.")
-# → detects English AI-safe words ✓
-
-# Or specify explicitly
-report = full_report("这个问题值得深思。", lang="zh")
+# Auto-detect language (zh / en / ja)
+report = full_report("This cannot be overstated.")     # → English AI-safe ✓
+report = full_report("この問題は重要な意義を持つ。")   # → Japanese AI-safe ✓
+report = full_report("这个问题值得深思。", lang="zh")  # → specify explicitly
 ```
 
 ---
@@ -90,8 +88,8 @@ stylized-writing-workshop/
 │   ├── stylized-writing-auditor.md   Style auditor
 │   └── stylized-writing-team-lead.md Team coordinator
 ├── engines/                   # Python deterministic engines
-│   ├── lang_config.py               Bilingual pattern config
-│   ├── edge_detector_essay.py       AI-taste detection
+│   ├── lang_config.py               Trilingual pattern config (ZH/EN/JA)
+│   ├── edge_detector_essay.py       7-dim AI-taste detection
 │   ├── style_profile_engine.py      Style rule validation
 │   ├── argument_controller.py       Argument structure control
 │   ├── citation_guard.py            Citation quality guard

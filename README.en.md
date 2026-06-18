@@ -15,17 +15,17 @@ pip install chromadb sentence-transformers
 ```python
 from engines.edge_detector_essay import full_report
 
-# Auto-detects language (Chinese / English)
-report = full_report("This cannot be overstated. It marks a new era.")
+# Auto-detects language (Chinese / English / Japanese)
+report = full_report("This cannot be overstated.")
+report = full_report("この問題は重要な意義を持つ。")   # Japanese auto-detect ✓
 print(report["status"], report["overall_score"])
-# → detects English AI-safe phrases: "cannot be overstated" ✓
 ```
 
-## 5 Deterministic Engines
+## 5 Deterministic Engines · Trilingual (ZH/EN/JA)
 
 | Engine | Detects | Method |
 |--------|---------|--------|
-| **edge_detector_essay** | "AI taste" | sentence variance / Gini coefficient / data density / safe words |
+| **edge_detector_essay** | "AI taste" (7 dims) | sentence variance / Gini coefficient / data density / safe words / repetition / golden sentences / rhetoric |
 | **style_profile_engine** | Style compliance | argument structure matching / forbidden lists |
 | **argument_controller** | 3-stage logic | problem→analysis→solution validation |
 | **citation_guard** | Citation quality | source prefix matching / vague statement detection |
