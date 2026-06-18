@@ -1,368 +1,216 @@
 # 风格化写作工坊 · Stylized Writing Workshop
 
-> **Python deterministic engines + ChromaDB vector retrieval = engineering-grade AI writing quality control**
-> 中文 | [English](./README.en.md)
+> 全自动 AI 写作系统 · 给定主题，自动调研、自动写作、自动校验、自动修改到达标
+> Autonomous writing pipeline: research → write → QC → revise → done
+> 対応言語：中文 · [English](./README.en.md) · [日本語](./README.ja.md)
 
-这不是一个"写文章"的工具，而是一套 **"让AI写出来的东西不像AI写的"** 的质量控制系统。核心思路：**"好作品走极端，AI安全就是平庸"**。
-
-> WorkBuddy Agent · qclaw Skill · 中英日三语 · 7维检测
+[//]: # (This README is in Chinese. English version: README.en.md | 日本語版: README.ja.md)
 
 ---
 
-## 技术特色 · Features
+## 一句话概括
 
-### 五层确定性引擎 · Five Deterministic Engines
-
-放弃 prompt 约束风格，改用 Python 确定性规则引擎：
-
-| Engine | What | How |
-|--------|------|-----|
-| **research_orchestrator** | Autonomous writing pipeline | web research → outline → write → 5-engine QC → iterate |
-| **vector_search** | Unified vector search | cross-DB query across maqianzu + idioms + poems |
-| **edge_detector_essay** | Detect "AI taste" (7 dims) | sentence variance / Gini coefficient / data density / AI-safe words / repetition / golden sentences / rhetoric clustering |
-| **style_profile_engine** | Style compliance | argument structure matching / forbidden list / data thresholds |
-| **argument_controller** | Force 3-stage logic | problem→analysis→solution paragraph validation + outline generation |
-| **citation_guard** | Citation quality | source prefix matching / vague statement detection / credibility scoring |
-| **logic_guard** | Logic & hallucination | causal chain completeness / fact claim tagging / contradiction detection / timeline check |
-
-All detections are **deterministic** (regex, statistics, Gini coefficient). No LLM-as-judge needed.
-
-### 双向量库 · Dual Vector Databases
-
-- **maqianzu corpus** (198MB): 1,376 semantic chunks from btnews (832 episodes + 40 opinions + 446 references + 60 slang)
-- **Literary reference** (550MB): 30,310 Chinese idioms + 10,000 classical poem sentences (THUOCL)
-
-### 多语言支持 · Trilingual (ZH/EN/JA)
-
-```python
-from engines.edge_detector_essay import full_report
-
-# Auto-detect language (zh / en / ja)
-report = full_report("This cannot be overstated.")     # → English AI-safe ✓
-report = full_report("この問題は重要な意義を持つ。")   # → Japanese AI-safe ✓
-report = full_report("这个问题值得深思。", lang="zh")  # → specify explicitly
+```
+给定一个主题 → 自动联网搜索 → 自动生成提纲 → 按风格写文章
+→ 5个引擎逐层检测AI味 → 不达标自动修改 → 直到质量合格
 ```
 
 ---
 
-## 实战教程 · Tutorial
-
-### 场景：你写了一篇公众号文章，担心被小红书/公众号判为AI生成
-
-现在很多平台对AI生成内容的风控越来越严。我们的工坊不只是一个质检工具，它是一套能帮你**写出一篇"看起来就是人写的"文章**的完整系统。
-
----
-
-### 第一步：用马前卒风格写一篇初稿
-
-```python
-# 在你的 AI 对话工具或 WorkBuddy Agent 中调用马前卒写手
-# 提示词模板：
-
-你是一个马前卒风格的写手，请写一篇关于\"中国芯片产业现状\"的分析文章。
-要求：
-1. 按"问题提出→数据呈现→原因分析→方案建议"的结构组织
-2. 至少引用3个具体数据点
-3. 以设问句开头
-4. 结尾给出可操作的解决方案
-```
-
-### 第二步：检测AI味
-
-```python
-from engines.edge_detector_essay import full_report
-
-text = open("draft.md", encoding="utf-8").read()
-report = full_report(text)
-
-print(f"总分: {report['overall_score']}/100")
-print(f"状态: {report['status']}")
-# good / minor_issues / needs_revision / ai_taste
-
-for issue in report["issues"]:
-    print(f"  [{issue['severity']}] {issue['dimension']}: {issue['detail']}")
-```
-
-**输出示例：**
-```
-总分: 62.5/100
-状态: needs_revision
-  [CRITICAL] 数据密度: 全文无数据支撑，政论文章大忌
-  [WARNING] AI套话: 安全词密度2.5/千字，含['空洞表态']等类别
-```
-
-### 第三步：针对性修改
-
-根据检测报告中的问题逐条修改。几个高频问题及对策：
-
-| 检测问题 | 典型AI写法 | 改成这样 |
-|---------|-----------|---------|
-| AI套话过多 | "这个问题值得深思" | "这个问题的账其实很简单：收入涨不动，支出却刚性" |
-| 数据空洞 | "近年来快速增长" | "2023年进口芯片3500亿美元，同比降15.6%" |
-| 金句堆砌 | "既要…又要…更要…不仅…而且…" | 保留1-2处，其余改为平实陈述 |
-| 句长无节奏 | 每句25-30字均匀分布 | 在第3段插入1句极短句(<10字)打乱节奏 |
-| 用词重复 | "核心""关键""突破"高频出现 | 替换同义词："要害""枢纽""关卡""进展" |
-
-### 第四步：校验风格合规
-
-```python
-from engines.style_profile_engine import validate_against_profile
-
-# 检查是否符合马前卒风格
-result = validate_against_profile(text, "maqianzu")
-print(f"风格校验: {'通过' if result['pass'] else '未通过'}")
-for issue in result["issues"]:
-    print(f"  {issue}")
-```
-
-### 第五步：检查引用质量
-
-```python
-from engines.citation_guard import CitationGuard
-guard = CitationGuard()
-result = guard.scan(text)
-print(f"引用可信度: {result['citation_score']}/100")
-print(f"有来源声明: {result['sourced_claims']}, 无来源: {result['unsourced_claims']}")
-
-# 如果有无来源的数据，搜索结果给它补上出处
-from engines.vector_search import search_all
-evidence = search_all("2023年芯片进口3500亿美元", top_k=1)
-print(f"搜索到参考: {evidence[0]['document'][:60] if evidence else '未找到'}")
-```
-
-### 第六步：检查逻辑一致性
-
-```python
-from engines.logic_guard import LogicGuard
-guard = LogicGuard()
-result = guard.scan(text)
-print(f"逻辑评分: {result['overall_score']}/100 ({result['status']})")
-if result['contradictions']:
-    print("检测到逻辑矛盾:")
-    for c in result['contradictions']:
-        print(f"  {c['claim_a'][:40]} ↔ {c['claim_b'][:40]}")
-```
-
-### 第七步：向量搜索找参考素材
-
-写作过程中随时可以调用向量库找参考：
-
-```python
-from engines.vector_search import search_all, search_writer, search_literary
-
-# 1. 找马督工对某个话题的原话
-refs = search_writer("maqianzu", "芯片产业", top_k=3)
-for ref in refs:
-    print(f"睡前消息参考: {ref['document'][:100]}...")
-
-# 2. 找合适的成语
-idiom = search_literary("坚持不懈的精神", type_filter="idioms", top_k=1)
-print(f"推荐成语: {idiom[0]['document']}")
-
-# 3. 找诗词引用
-poem = search_literary("奋斗", type_filter="poem_sentences", top_k=1)
-print(f"推荐诗句: {poem[0]['document']}")
-```
-
----
-
-## 参数调优指南
-
-### 调整检测阈值
-
-所有检测阈值在引擎源码顶部以常量形式定义，可直接修改：
-
-**edge_detector_essay.py:**
-```python
-# 句长节奏阈值
-MIN_SENTENCES = 10         # 最少句子数，少于则判定 too_short
-RHYTHM_STD_THRESHOLD = 10  # 句长方差低于此值判为 flat
-
-# 数据密度阈值
-DATA_STATUS = {
-    "data_void": 1,    # <1条/千字
-    "sparse": 3,       # <3条/千字
-    "good": 12,        # 3-12条/千字 为理想区间
-}
-
-# AI安全词密度
-SAFE_WORD_THRESHOLDS = {
-    "heavy": 3,        # >3条/千字 → critical
-    "noticeable": 1.5, # >1.5条/千字 → warning
-}
-
-# 重复用词
-OBSESSIVE_THRESHOLD = 0.08  # 同一词占比>8%标记
-TOP3_SHARE_WARN = 0.30      # 前3高频词占比>30%报警
-```
-
-**argument_controller.py:**
-```python
-# 论证结构权重
-STAGE_WEIGHTS = {
-    "问题提出": 1,
-    "数据呈现": 2,    # 数据最重要
-    "原因分析": 2,
-    "方案建议": 2,
-}
-```
-
-**citation_guard.py:**
-```python
-# 引用评分权重
-SOURCE_RATIO_WEIGHT = 60   # 来源占比权重
-DATA_VOLUME_WEIGHT = 40    # 数据量权重
-```
-
-### 调整风格配置文件
-
-`style_profile_engine.py` 中每个写手有独立的配置块。以马前卒为例：
-
-```python
-"maqianzu": {
-    "data_requirements": {
-        "min_data_points": 3,      # 最少数据点数
-        "preferred_min": 5,        # 推荐数据点数
-        "density_per_1000": 2.0,   # 千字密度
-    },
-    "forbidden": [
-        # 添加你自己的禁忌规则
-        {"name": "行业黑话", "pattern": r"赋能|闭环|抓手|颗粒度",
-         "suggestion": "用大白话替换行业黑话"},
-    ],
-    "sentence_patterns": {
-        "ratio_limits": {
-            "设问句比例": [">=", 0.08],  # 设问句至少 8%
-        }
-    }
-}
-```
-
-### 调整论证结构模板
-
-`argument_controller.py` 中每个写手有 stage 配置。可调整每阶段的最少字数：
-
-```python
-"maqianzu": {
-    "stages": [
-        {"name": "问题提出", "min_chars": 200},   # 最少200字
-        {"name": "数据呈现", "min_chars": 300},   # 最少300字
-        {"name": "原因分析", "min_chars": 400},
-        {"name": "方案建议", "min_chars": 300},
-    ]
-}
-```
-
----
-
-## 写作工作流速查
-
-```
-                          ┌──────────────────┐
-                          │  写手 Agent 生成  │
-                          │  (MD提示词驱动)   │
-                          └────────┬─────────┘
-                                   ↓
-                    ┌──────────────────────────┐
-                    │  向量搜索找参考素材       │
-                    │  vector_search.search()  │
-                    └────────┬─────────────────┘
-                             ↓
-              ┌──────────────────────────────┐
-              │  5个引擎逐层校验              │
-              │                              │
-              │  ① edge_detector  → AI味检测  │
-              │  ② style_profile → 风格合规   │
-              │  ③ citation_guard → 引用质量  │
-              │  ④ logic_guard   → 逻辑一致性 │
-              │  ⑤ argument_ctrl  → 结构校验  │
-              └────────┬─────────────────────┘
-                       ↓
-              ┌──────────────────┐
-              │  根据报告修改     │
-              │  重新校验         │
-              │  直到 pass        │
-              └──────────────────┘
-```
-
----
-
-## Quick Start
+## 安装
 
 ```bash
 pip install chromadb sentence-transformers
+# 联网搜索可选（推荐）:
+pip install duckduckgo-search
 ```
 
+向量库已含在仓库中（Git LFS），克隆后即可使用，无需额外构建。
+
+---
+
+## 核心用法
+
+### 全自动写作（推荐）
+
 ```python
-# 1. Detect AI taste
+from engines.research_orchestrator import ResearchOrchestrator
+
+robot = ResearchOrchestrator()
+
+# 给定主题，全自动完成：调研 → 写作 → 校验 → 修改
+article = robot.write(
+    topic="中国芯片产业现状与未来",
+    style="maqianzu",        # 支持 maqianzu / jiubian / lukewen / natgeo
+    max_iterations=3,         # 不达标最多重写3轮
+)
+
+print(article["title"])
+print(article["content"])
+print(f"最终质量评分: {article['quality_score']}/100")
+```
+
+输出示例：
+```
+[1/5] 联网调研... 搜索了5组关键词，提取8条数据点
+[2/5] 生成提纲... [问题提出] [数据呈现] [原因分析] [方案建议]
+[3/5] 生成初稿... 完成 (1240字)
+[4/5] 质量校验...
+  第1轮: 62.5/100 (needs_revision) → 数据稀疏、AI套话
+  第2轮: 78.0/100 (minor_issues) → 金句略多
+  第3轮: 85.0/100 (good) ✅
+[5/5] 完成
+最终质量评分: 85.0/100
+```
+
+### 对已有文章做质检
+
+```python
 from engines.edge_detector_essay import full_report
-report = full_report(open("article.txt").read())
-print(report["status"], report["overall_score"])
-
-# 2. Validate style
-from engines.style_profile_engine import validate_against_profile
-result = validate_against_profile(open("article.txt").read(), "maqianzu")
-
-# 3. Generate outline
-from engines.argument_controller import ArgumentController
-ctrl = ArgumentController("maqianzu")
-outline = ctrl.generate_outline("semiconductor industry")
-
-# 4. Check citations
 from engines.citation_guard import CitationGuard
-guard = CitationGuard()
-guard.scan(open("article.txt").read())
-
-# 5. Logic check (bilingual)
 from engines.logic_guard import LogicGuard
-LogicGuard().scan(open("article.txt").read())
+
+text = open("my_article.md", encoding="utf-8").read()
+
+# 检测AI味
+report = full_report(text)
+print(f"状态: {report['status']} / 评分: {report['overall_score']}/100")
+
+# 检查引用
+cite = CitationGuard().scan(text)
+print(f"引用可信度: {cite['citation_score']}/100")
+
+# 检查逻辑
+logic = LogicGuard().scan(text)
+print(f"逻辑评分: {logic['overall_score']}/100")
 ```
 
 ---
 
-## Architecture
+## 快速调用速查
+
+```python
+# === 自动写作（一条命令）===
+from engines.research_orchestrator import auto_write
+result = auto_write("芯片产业", style="maqianzu")
+
+# === 搜索参考素材 ===
+from engines.vector_search import search_all, search_writer, search_literary
+search_all("房价")                   # 跨库搜索
+search_writer("maqianzu", "芯片")    # 马前卒语料
+search_literary("坚持", "idioms")    # 成语
+
+# === 生成提纲 ===
+from engines.argument_controller import create_outline
+outline = create_outline("maqianzu", "房价")
+
+# === 风格校验 ===
+from engines.style_profile_engine import validate_against_profile
+validate_against_profile(text, "maqianzu")
+
+# === AI味检测 ===
+from engines.edge_detector_essay import full_report
+full_report(text, lang="en")  # 英文
+full_report(text, lang="ja")  # 日文
+full_report(text)             # 自动检测
+```
+
+---
+
+## 引擎一览
+
+| 引擎 | 作用 |
+|------|------|
+| **research_orchestrator** | 全自动写作管线：调研→写作→校验→迭代 |
+| **vector_search** | 跨库向量搜索（马前卒语料 + 成语 + 诗词） |
+| **edge_detector_essay** | 7维AI味检测：句长节奏/数据密度/金句/AI套话/重复用词/论证结构/修辞 |
+| **style_profile_engine** | 风格合规校验（4位写手的规则配置） |
+| **argument_controller** | 论证三段论强制与提纲生成 |
+| **citation_guard** | 引用来源标注检查与可信度评分 |
+| **logic_guard** | 逻辑一致性：因果链/矛盾检测/时间线/幻觉 |
+
+所有引擎均使用**确定性规则**（正则/统计/基尼系数），不依赖LLM做二次判断。
+
+---
+
+## 向量库
+
+| 库 | 大小 | 内容 |
+|----|------|------|
+| `vector_db/maqianzu/` | 198MB | 睡前消息832期 + 高见40篇 + 参考信息446篇 + 黑话60篇 = 1376条语义切片 |
+| `vector_db/literary_ref/` | 550MB | 成语 30,310 条 + 诗词名句 10,000 条 |
+
+向量库通过 Git LFS 管理，克隆后可直接使用。
+
+---
+
+## 语言支持
+
+引擎自动检测输入文本的语言，支持中/英/日三语：
+
+```python
+full_report("This cannot be overstated."))        # → 自动识別 en
+full_report("この問題は重要な意義を持つ。")       # → 自動検出 ja
+full_report("这个问题值得深思。")                   # → 自动识别 zh
+```
+
+---
+
+## 写手风格
+
+| 写手 | 论证结构 | 向量数据 | 说明 |
+|------|---------|---------|------|
+| **马前卒** | 问题→数据→分析→方案 | ✅ 1376条 | 工程师视角，数据驱动 |
+| **九边** | 背景→现象→深度→开放 | ⚠️ 待补充 | 长线社会观察 |
+| **卢克文** | 地缘→冲突→推演→前景 | ⚠️ 待补充 | 宏大叙事，地缘政治 |
+| **国家地理** | 发现→原理→数据→意义 | ✅ 成语+诗词 | 科学叙事 |
+
+九边和卢克文目前仅有风格规则配置和 Agent 定义，缺少本地向量库（尚未找到合适的公开语料）。引擎的规则校验功能仍然可用。
+
+---
+
+## 参数调优
+
+各引擎的检测阈值在源码顶部定义为常量，直接修改即可：
+
+```python
+# edge_detector_essay.py
+OBSESSIVE_THRESHOLD = 0.08   # 同一词占比>8%标记为重复
+
+# citation_guard.py
+SOURCE_RATIO_WEIGHT = 60      # 来源占比权重
+DATA_VOLUME_WEIGHT = 40       # 数据量权重
+
+# style_profile_engine.py — 马前卒的配置块
+"min_data_points": 3           # 最少数据点数
+"preferred_min": 5             # 推荐数据点数
+```
+
+---
+
+## 架构
 
 ```
 stylized-writing-workshop/
-├── agents/                    # Agent configs
-│   ├── stylized-writer-maqianzu.md   Ma Qianzu style
-│   ├── stylized-writer-jiubian.md    Jiubian style   ⚠️ no vector data
-│   ├── stylized-writer-lukewen.md    Lu Kewen style  ⚠️ no vector data
-│   ├── stylized-writer-natgeo.md     NatGeo style
-│   ├── stylized-writing-auditor.md   Style auditor
-│   └── stylized-writing-team-lead.md Team coordinator
-├── engines/                   # Python deterministic engines
-│   ├── research_orchestrator.py      [NEW] Autonomous research & writing pipeline
-│   ├── vector_search.py              [NEW] Unified vector search (all DBs)
-│   ├── lang_config.py               Trilingual pattern config (ZH/EN/JA)
-│   ├── edge_detector_essay.py       7-dim AI-taste detection
-│   ├── style_profile_engine.py      Style rule validation
-│   ├── argument_controller.py       Argument structure control
-│   ├── citation_guard.py            Citation quality guard
-│   └── logic_guard.py               Logic consistency guard
-├── vector_db/                 # ChromaDB vector stores (LFS)
-│   ├── maqianzu/                   Ma Qianzu corpus (198MB)
-│   └── literary_ref/               Idioms + poems (550MB)
-├── skills/styles/             # Style analysis references
-└── scripts/                   # Build tools
+├── engines/
+│   ├── research_orchestrator.py    全自动写作管线
+│   ├── vector_search.py            统一向量搜索
+│   ├── edge_detector_essay.py      AI味检测
+│   ├── style_profile_engine.py     风格校验
+│   ├── argument_controller.py      论证结构
+│   ├── citation_guard.py           引用检查
+│   ├── logic_guard.py              逻辑一致性
+│   └── lang_config.py              三语模式配置
+├── agents/                         写手 Agent 配置
+├── vector_db/                      向量库 (LFS)
+└── skills/styles/                  风格参考
 ```
-
----
-
-## Style Profiles
-
-| Writer | Structure | Vector Data | Notes |
-|--------|-----------|-------------|-------|
-| **Ma Qianzu** | Problem → Data → Analysis → Solution | ✅ 1,376 chunks | Engineer's lens, data-driven |
-| **Jiubian** | Background → Phenomenon → Deep → Open | ⚠️ Pending | Long-form social commentary |
-| **Lu Kewen** | Geopolitical context → Conflict → Logic → Outlook | ⚠️ Pending | Grand narrative, geopolitics |
-| **NatGeo** | Discovery → Science → Evidence → Meaning | ✅ Idioms+Poems for reference | Scientific storytelling |
 
 ---
 
 ## Tags
 
-`ai-writing` `style-transfer` `writing-quality` `chinese-nlp` `content-detection` `chromadb` `nlp` `writing-tools` `aigc-detection` `essay-analysis`
+`ai-writing` `style-transfer` `writing-quality` `chinese-nlp` `aigc-detection` `chromadb` `nlp` `writing-tools` `content-detection` `essay-analysis`
 
 ## License
 
@@ -370,6 +218,6 @@ MIT
 
 ## Credits
 
-- 衍梦文枢 v2 — Edge detection philosophy: "Good works go to extremes. AI safety is mediocrity."
-- btnews — Ma Qianzu's Bedtime News corpus (https://github.com/mdark-org/btnews)
-- THUOCL — Tsinghua Open Chinese Lexicon
+- 衍梦文枢 v2 — 检测哲学："好作品走极端，AI安全就是平庸"
+- btnews — 马前卒睡前消息语料 (github.com/mdark-org/btnews)
+- THUOCL — 清华大学开放中文词库
