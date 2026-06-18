@@ -486,6 +486,117 @@ def detect_rhetoric_clustering(text: str) -> dict:
 
 
 # ═══════════════════════════════════════════════
+# 7. 重复用词检测
+# ═══════════════════════════════════════════════
+def detect_word_repetition(text: str, lang: str = "zh") -> dict:
+    """
+    检测文本中高频重复用词。
+    
+    AI 文章特征：
+    - 中文：高频使用"的""了""在""是""这""那""都""也"等虚词
+    - 英文：高频使用"the""and""that""this""it"等
+    - 更隐蔽的是：AI 倾向反复使用特定的"高级词"（如"关键""核心""重要""显著"）
+    
+    返回:
+        {"top_repeated": [...], "repetition_score": 0-100, "issues": [...]}
+    """
+    import collections
+    
+    total_chars = len(text)
+    # 中文信息密度高，100字即有足够统计量；英文需要较多单词
+    min_chars = 100 if lang == "zh" else 200
+    if total_chars < min_chars:
+        return {"repetition_score": 50, "top_repeated": [], "obsessive_words": [], "status": "too_short", "issues": []}
+    
+    # 分词：中文按字/词，英文按单词
+    if lang == "zh":
+        # 中文：提取2字及以上词频（用简单滑动窗口，避免分词依赖）
+        words = []
+        # 提取所有至少2个中文字符的片段
+        import re as _re
+        segments = _re.findall(r'[\u4e00-\u9fff]{2,}', text)
+        for seg in segments:
+            # 2-gram 滑动窗口
+            for i in range(len(seg) - 1):
+                words.append(seg[i:i+2])
+            # 3-gram
+            for i in range(len(seg) - 2):
+                words.append(seg[i:i+3])
+    else:
+        # 英文：按单词分割，过滤常见词
+        import re as _re
+        raw_words = _re.findall(r'[a-zA-Z]+', text.lower())
+        # 过滤停用词
+        stopwords = {'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for',
+                     'of', 'with', 'by', 'from', 'as', 'is', 'was', 'are', 'were', 'be',
+                     'been', 'being', 'have', 'has', 'had', 'do', 'does', 'did', 'will',
+                     'would', 'can', 'could', 'may', 'might', 'shall', 'should', 'this',
+                     'that', 'these', 'those', 'it', 'its', 'they', 'them', 'their',
+                     'we', 'us', 'our', 'you', 'your', 'he', 'she', 'him', 'her',
+                     'not', 'no', 'nor', 'so', 'if', 'than', 'then', 'just', 'also',
+                     'very', 'too', 'much', 'more', 'most', 'some', 'any', 'all', 'each',
+                     'every', 'both', 'few', 'several', 'about', 'into', 'over', 'after',
+                     'before', 'between', 'under', 'again', 'further', 'once', 'here',
+                     'there', 'when', 'where', 'why', 'how', 'what', 'which', 'who',
+                     'whom', 'whose'}
+        words = [w for w in raw_words if w not in stopwords and len(w) > 2]
+    
+    if not words:
+        return {"repetition_score": 70, "top_repeated": [], "status": "clean", "issues": []}
+    
+    counter = collections.Counter(words)
+    total_words = len(words)
+    
+    # 取 top-15 高频词
+    top_15 = counter.most_common(15)
+    
+    # 计算重复度：
+    # - 前3高频词的占比之和
+    # - 词的种类/总词数之比（越低越重复）
+    unique_ratio = len(counter) / max(1, total_words)
+    
+    top3_share = sum(count for word, count in top_15[:3]) / max(1, total_words)
+    
+    # 检测"偏执重复"：某个词占比异常高
+    obsessive_words = []
+    for word, count in top_15[:10]:
+        share = count / max(1, total_words)
+        if share > 0.08:  # 超过8%的重复率
+            obsessive_words.append({"word": word, "count": count, "share": round(share, 3)})
+    
+    # 综合评分
+    # unique_ratio: >0.5 为丰富（高分），<0.2 为贫乏（低分）
+    diversity_score = min(100, unique_ratio / 0.5 * 100)
+    # top3_share: <15% 为健康，>30% 为重复
+    concentration_penalty = max(0, (top3_share - 0.15) / 0.3 * 100) if top3_share > 0.15 else 0
+    # 偏执重复扣分
+    obsession_penalty = len(obsessive_words) * 15
+    
+    score = max(0, min(100, diversity_score * 0.6 - concentration_penalty - obsession_penalty + 30))
+    
+    issues = []
+    if obsessive_words:
+        detail = "、".join([f'"{w["word"]}"({w["share"]*100:.0f}%)' for w in obsessive_words[:5]])
+        issues.append(f"高频重复词: {detail}")
+    if top3_share > 0.3:
+        issues.append(f"前3高频词占比{top3_share*100:.0f}%，用词多样性不足")
+    
+    status = "good" if score >= 70 else "warning" if score >= 40 else "poor"
+    
+    return {
+        "repetition_score": round(score, 1),
+        "status": status,
+        "total_words": total_words,
+        "unique_words": len(counter),
+        "unique_ratio": round(unique_ratio, 3),
+        "top3_share": round(top3_share, 3),
+        "top_repeated": top_15[:10],
+        "obsessive_words": obsessive_words[:5],
+        "issues": issues,
+    }
+
+
+# ═══════════════════════════════════════════════
 # 综合评分
 # ═══════════════════════════════════════════════
 def full_report(text: str, lang: Optional[str] = None) -> dict:
@@ -495,13 +606,14 @@ def full_report(text: str, lang: Optional[str] = None) -> dict:
     """
     if lang is None:
         lang = lc.detect_lang(text)
-    """返回完整的政经评论风格检测报告"""
+    
     rhythm = detect_sentence_rhythm(text)
     data_density = detect_data_density(text)
     golden = detect_golden_sentence(text)
-    ai_safe = detect_ai_safe_words(text)
+    ai_safe = detect_ai_safe_words(text, lang=lang)
     argument = detect_argument_structure(text)
     rhetoric = detect_rhetoric_clustering(text)
+    repetition = detect_word_repetition(text, lang=lang)
 
     # 综合评分
     scores = {
@@ -511,6 +623,7 @@ def full_report(text: str, lang: Optional[str] = None) -> dict:
         "AI套话控制": ai_safe["score"],
         "论证结构": argument["structure_score"],
         "修辞集中度": rhetoric["clustering_score"],
+        "用词多样性": repetition["repetition_score"],
     }
     overall = round(sum(scores.values()) / len(scores), 1)
 
@@ -552,6 +665,10 @@ def full_report(text: str, lang: Optional[str] = None) -> dict:
                      + sum(1 for i in issues if i["severity"] == "warning") * 2 \
                      + sum(1 for i in issues if i["severity"] == "notice")
 
+    if repetition["status"] != "good":
+        for iss in repetition.get("issues", []):
+            issues.append({"dimension": "用词重复", "severity": "warning", "detail": iss})
+
     if total_severity >= 6:
         status = "ai_taste"
     elif total_severity >= 3:
@@ -573,6 +690,7 @@ def full_report(text: str, lang: Optional[str] = None) -> dict:
             "ai_safe_words": ai_safe,
             "argument_structure": argument,
             "rhetoric": rhetoric,
+            "repetition": repetition,
         }
     }
 
