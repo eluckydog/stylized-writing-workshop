@@ -4,7 +4,8 @@ vector_search.py — 向量检索引擎
 
 统一检索写作工坊的所有向量数据库：
 1. maqianzu/     — 马前卒语料 1376 条语义切片
-2. literary_ref/ — idioms 30K + poem_sentences 10K
+2. lukewen/      — 卢克文文集 444 篇（约12K语义块）
+3. literary_ref/ — idioms 30K + poem_sentences 10K
 
 用法:
     from engines.vector_search import search_all, search_writer
@@ -34,6 +35,11 @@ SEARCHABLE_DBS = {
         "path": VECTOR_DIR / "maqianzu",
         "collections": ["maqianzu"],
         "description": "马前卒语料（睡前消息832期+高见40+参考信息446+黑话60）",
+    },
+    "lukewen": {
+        "path": VECTOR_DIR / "lukewen",
+        "collections": ["lukewen"],
+        "description": "卢克文文集（444篇，约12K语义块）",
     },
     "literary_ref": {
         "path": VECTOR_DIR / "literary_ref",
@@ -142,6 +148,7 @@ def search_writer(writer: str, query: str, top_k: int = 5) -> list[dict]:
     """
     writer_db_map = {
         "maqianzu": "maqianzu",
+        "lukewen": "lukewen",
     }
     db_key = writer_db_map.get(writer)
     if not db_key:
