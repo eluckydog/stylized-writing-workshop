@@ -31,7 +31,7 @@ def detect_lang(text: str) -> Lang:
     """
     sample = text[:200]
     hira_kata = sum(1 for c in sample if '\u3040' <= c <= '\u309f' or '\u30a0' <= c <= '\u30ff')
-    if hira_kata > 3:
+    if hira_kata >= 2:
         return "ja"
     cn_chars = sum(1 for c in sample if '\u4e00' <= c <= '\u9fff')
     return "zh" if cn_chars > len(sample) * 0.1 else "en"
