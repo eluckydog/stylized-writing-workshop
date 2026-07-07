@@ -56,8 +56,9 @@ print(f"Status: {report['status']} / Score: {report['overall_score']}/100")
 | Engine | What it does |
 |--------|-------------|
 | **research_orchestrator** | Autonomous pipeline: research → write → QC → iterate |
-| **vector_search** | Cross-DB search (corpus + idioms + poems) |
+| **vector_search** | Cross-DB search (maqianzu + **lukewen** + idioms + poems) |
 | **edge_detector_essay** | 7-dim AI-taste detection (rhythm, data, golden sentences, safe words, repetition, structure, rhetoric) |
+| **literary_spark** | **Idiom/poem suggestion engine** — detects dull spots, recommends spark at key moments |
 | **style_profile_engine** | Style compliance validation |
 | **argument_controller** | 3-stage logic enforcement + outline generation |
 | **citation_guard** | Citation quality & credibility scoring |
@@ -72,6 +73,7 @@ All engines use **deterministic rules** (regex, statistics, Gini coefficient). N
 | DB | Size | Contents |
 |----|------|----------|
 | `vector_db/maqianzu/` | 198MB | 1,376 semantic chunks from Chinese commentary |
+| `vector_db/lukewen/` | 30MB | 12,164 chunks from 444 Lu Kewen articles |
 | `vector_db/literary_ref/` | 550MB | 30K idioms + 10K classical poems |
 
 ---
