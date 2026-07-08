@@ -5,7 +5,8 @@ vector_search.py — 向量检索引擎
 统一检索写作工坊的所有向量数据库：
 1. maqianzu/     — 马前卒语料 1376 条语义切片
 2. lukewen/      — 卢克文文集 444 篇（约12K语义块）
-3. literary_ref/ — idioms 30K + poem_sentences 10K
+3. jiubian/      — 九边公众号文集 562 篇（约12K语义块）
+4. literary_ref/ — idioms 30K + poem_sentences 10K
 
 用法:
     from engines.vector_search import search_all, search_writer
@@ -41,6 +42,11 @@ SEARCHABLE_DBS = {
         "collections": ["lukewen"],
         "description": "卢克文文集（444篇，约12K语义块）",
     },
+    "jiubian": {
+        "path": VECTOR_DIR / "jiubian",
+        "collections": ["jiubian"],
+        "description": "九边公众号文集（562篇，约12K语义块）",
+    },
     "literary_ref": {
         "path": VECTOR_DIR / "literary_ref",
         "collections": ["idioms", "poem_sentences"],
@@ -67,11 +73,22 @@ def _get_client(db_key: str):
 
 
 def _get_model():
-    """获取或创建 embedding 模型"""
+    """获取或创建 embedding 模型
+
+    优先使用本地已缓存的 BAAI/bge-small-zh-v1.5 快照路径（彻底离线、绕 GFW）；
+    若本地缓存缺失，回退到模型名（此时需要能访问 HuggingFace，仅作兜底）。
+    """
     global _model
     if _model is None:
+        import glob as _glob
         from sentence_transformers import SentenceTransformer
-        _model = SentenceTransformer("BAAI/bge-small-zh-v1.5", trust_remote_code=True)
+        _cache_root = os.path.expanduser(
+            "~/.cache/huggingface/hub/models--BAAI--bge-small-zh-v1.5/snapshots")
+        _snaps = sorted(_glob.glob(os.path.join(_cache_root, "*")))
+        _model_name = _snaps[-1] if _snaps else "BAAI/bge-small-zh-v1.5"
+        os.environ.setdefault("HF_HUB_OFFLINE", "1")
+        os.environ.setdefault("TRANSFORMERS_OFFLINE", "1")
+        _model = SentenceTransformer(_model_name, trust_remote_code=True)
     return _model
 
 
@@ -144,11 +161,12 @@ def search_writer(writer: str, query: str, top_k: int = 5) -> list[dict]:
     按写手搜索参考素材
 
     writer: "maqianzu" | "jiubian" | "lukewen" | "natgeo"
-    目前仅 maqianzu 有本地向量库
+    目前 maqianzu / lukewen / jiubian 均有本地向量库
     """
     writer_db_map = {
         "maqianzu": "maqianzu",
         "lukewen": "lukewen",
+        "jiubian": "jiubian",
     }
     db_key = writer_db_map.get(writer)
     if not db_key:

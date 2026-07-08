@@ -316,6 +316,20 @@ class ResearchOrchestrator:
             parts.append(f"  [{flag}] {item['stage']}: {item.get('prompt', '')}")
         parts.append("")
 
+        # 方法论骨架（由 methodology/ 蒸馏画像驱动，不依赖 RAG 是否命中）
+        # 即使话题语料未覆盖，也能提供"怎么想"的论证骨架
+        try:
+            from methodology.methodology_engine import instantiate, format_scaffold
+            sc = instantiate(style, topic)
+            if "error" not in sc:
+                parts.append("【方法论骨架 · 该风格的「怎么想」】")
+                for line in format_scaffold(sc).split("\n"):
+                    if line.strip():
+                        parts.append(f"  {line}")
+                parts.append("")
+        except Exception:
+            pass  # 方法论模块缺失不影响主流程
+
         return "\n".join(parts)
 
     def _generate_draft(self, context: str, style: str) -> str:
